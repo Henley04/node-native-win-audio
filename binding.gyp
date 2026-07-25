@@ -41,11 +41,7 @@
             "setupapi.lib",
             "ksuser.lib",
             "avrt.lib",
-            "uuid.lib",
-            "mfplat.lib",
-            "mfuuid.lib",
-            "windowsapp.lib",
-            "RuntimeObject.lib"
+            "uuid.lib"
           ]
         }
       },
