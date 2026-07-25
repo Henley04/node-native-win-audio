@@ -4,22 +4,22 @@
 
 // windows.h must come first: ks.h references LONG/ULONG/GUID/HANDLE and will
 // fail with C3646/C4430 ("unknown override specifier") if those types aren't
-// already defined.  NOMINMAX / WIN32_LEAN_AND_MEAN are also defined globally
-// via binding.gyp, but we re-assert them here so the header is self-contained
-// when included from a translation unit that hasn't seen util.h yet.
+// already defined.  NOMINMAX is also defined globally via binding.gyp; we
+// re-assert it here so the header is self-contained when included from a
+// translation unit that hasn't seen util.h yet.
+//
+// We do NOT define WIN32_LEAN_AND_MEAN here: the backends need the full
+// windows.h (COM via objbase.h, mmsystem types, etc.) and trimming it broke
+// mmsyscom.h / cguid.h / ksmedia.h in various ways.
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
 #include <windows.h>
-// objbase.h must be pulled in before audioclient.h / mmdeviceapi.h /
-// functiondiscoverykeys_devpkey.h: WIN32_LEAN_AND_MEAN (defined globally in
-// binding.gyp) keeps windows.h from including it, and those headers rely on
-// the COM GUID machinery (DEFINE_GUID / DECLSPEC_UUID / __uuidof) that
-// objbase.h sets up.  Without it cguid.h fails with
-// "error C2059: syntax error: '__uuidof'".
+// objbase.h sets up the COM GUID machinery (DEFINE_GUID / DECLSPEC_UUID /
+// __uuidof) that audioclient.h / mmdeviceapi.h / functiondiscoverykeys_*
+// rely on.  It is pulled in by windows.h already, but we include it
+// explicitly to document the dependency and to keep the header robust should
+// someone re-enable WIN32_LEAN_AND_MEAN.
 #include <objbase.h>
 
 // KS headers must precede audioclient.h, otherwise ksmedia.h gets pulled in
