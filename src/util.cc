@@ -3,6 +3,7 @@
 
 #include <avrt.h>
 #include <mmreg.h>
+#include <audioclient.h>   // AUDCLNT_E_* HRESULTs in HresultToStatus
 // ksmedia.h hard-requires ks.h to be included first (#error otherwise).
 #include <ks.h>
 #include <ksmedia.h>
