@@ -2,6 +2,16 @@
 #ifndef NODE_WIN_AUDIO_UTIL_H_
 #define NODE_WIN_AUDIO_UTIL_H_
 
+// Prevent windows.h from polluting the global namespace with `min`/`max`
+// macros.  We rely on std::min/std::max throughout the codebase.
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+// Trim windows.h to reduce header pollution and build time.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <windows.h>
 
 #include <string>

@@ -66,7 +66,9 @@
         "_WIN32_WINNT=0x0A00",
         "WINVER=0x0A00",
         "NTDDI_VERSION=0x0A00000C",
-        "_WINSOCKAPI_"
+        "_WINSOCKAPI_",
+        "NOMINMAX",
+        "WIN32_LEAN_AND_MEAN"
       ]
     }
   ]
