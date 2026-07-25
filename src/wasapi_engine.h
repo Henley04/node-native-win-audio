@@ -14,6 +14,13 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+// objbase.h must be pulled in before audioclient.h / mmdeviceapi.h /
+// functiondiscoverykeys_devpkey.h: WIN32_LEAN_AND_MEAN (defined globally in
+// binding.gyp) keeps windows.h from including it, and those headers rely on
+// the COM GUID machinery (DEFINE_GUID / DECLSPEC_UUID / __uuidof) that
+// objbase.h sets up.  Without it cguid.h fails with
+// "error C2059: syntax error: '__uuidof'".
+#include <objbase.h>
 
 // KS headers must precede audioclient.h, otherwise ksmedia.h gets pulled in
 // transitively (via audioclient.h -> ks.h) before our explicit include, and
