@@ -2,6 +2,16 @@
 #ifndef NODE_WIN_AUDIO_MME_ENGINE_H_
 #define NODE_WIN_AUDIO_MME_ENGINE_H_
 
+// mmsystem.h transitively pulls in mmsyscom.h, which references MMVERSION /
+// HDRVR / FAR / DRVCALLBACK types that are only defined after windows.h has
+// been processed.  Including mmsystem.h before windows.h therefore produces
+// a flood of C4430/C3646/C2146 errors from inside the SDK header itself.
+// NOMINMAX is asserted locally because util.h is included further down and
+// we cannot rely on translation units seeing it first.
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 #include <mmsystem.h>
 
 #include <atomic>

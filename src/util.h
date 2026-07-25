@@ -7,10 +7,12 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-// Trim windows.h to reduce header pollution and build time.
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
+// NOTE: WIN32_LEAN_AND_MEAN is intentionally NOT defined here.  Several
+// backends need mmsystem.h / mmsyscom.h / ksmedia.h, whose type definitions
+// (MMVERSION, HDRVR, DRVCALLBACK, KSDATAFORMAT_*) get gated out by
+// WIN32_LEAN_AND_MEAN, producing C4430 / C3646 / C2065 errors from inside
+// the SDK headers themselves.  Trimming windows.h saves ~10% build time but
+// isn't worth the fragility.
 
 #include <windows.h>
 
