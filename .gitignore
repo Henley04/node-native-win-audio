@@ -1,0 +1,34 @@
+# Build artifacts
+build/
+out/
+Debug/
+Release/
+*.node
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln
+*.vcxproj*
+.vs/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Generated
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib

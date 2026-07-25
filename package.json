@@ -1,0 +1,41 @@
+{
+  "name": "node-native-win-audio",
+  "version": "0.1.0",
+  "description": "Native Node.js addon for low-latency Windows audio (WASAPI, WASAPI-Exclusive, ASIO, MME, WDM-KS, AudioGraph)",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "build": "node-gyp rebuild",
+    "clean": "node-gyp clean",
+    "rebuild": "node-gyp rebuild",
+    "test": "node test/test.js"
+  },
+  "gypfile": true,
+  "os": [
+    "win32"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "audio",
+    "windows",
+    "wasapi",
+    "asio",
+    "mme",
+    "wdm",
+    "low-latency",
+    "native",
+    "node-addon",
+    "napi"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-addon-api": "^7.0.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^10.0.0"
+  }
+}
