@@ -2,6 +2,19 @@
 #ifndef NODE_WIN_AUDIO_WASAPI_ENGINE_H_
 #define NODE_WIN_AUDIO_WASAPI_ENGINE_H_
 
+// windows.h must come first: ks.h references LONG/ULONG/GUID/HANDLE and will
+// fail with C3646/C4430 ("unknown override specifier") if those types aren't
+// already defined.  NOMINMAX / WIN32_LEAN_AND_MEAN are also defined globally
+// via binding.gyp, but we re-assert them here so the header is self-contained
+// when included from a translation unit that hasn't seen util.h yet.
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
 // KS headers must precede audioclient.h, otherwise ksmedia.h gets pulled in
 // transitively (via audioclient.h -> ks.h) before our explicit include, and
 // subsequent includes become no-ops due to header guards - leaving
