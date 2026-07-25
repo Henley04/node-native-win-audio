@@ -2,8 +2,15 @@
 #ifndef NODE_WIN_AUDIO_WASAPI_ENGINE_H_
 #define NODE_WIN_AUDIO_WASAPI_ENGINE_H_
 
+// KS headers must precede audioclient.h, otherwise ksmedia.h gets pulled in
+// transitively (via audioclient.h -> ks.h) before our explicit include, and
+// subsequent includes become no-ops due to header guards - leaving
+// SPEAKER_* / KSDATAFORMAT_SUBTYPE_* undefined.
+#include <ks.h>
+#include <ksmedia.h>
 #include <audioclient.h>
 #include <mmdeviceapi.h>
+#include <functiondiscoverykeys_devpkey.h>  // PKEY_Device_FriendlyName
 
 #include <atomic>
 #include <thread>
