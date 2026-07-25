@@ -65,6 +65,7 @@ class WdmEngine : public AudioEngine {
   HANDLE pin_     = INVALID_HANDLE_VALUE;  // pin handle
   HANDLE stopEvent_  = nullptr;
   HANDLE mmcssTask_  = nullptr;
+  std::thread thread_;                      // render / capture worker
 
   bool opened_  = false;
   bool running_ = false;
