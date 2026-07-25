@@ -13,9 +13,11 @@
 #ifndef NODE_WIN_AUDIO_WDM_ENGINE_H_
 #define NODE_WIN_AUDIO_WDM_ENGINE_H_
 
-#include <windows.h>
-#include <ks.h>
-#include <ksmedia.h>
+// All Windows SDK header ordering / fallback macro handling lives in
+// win_headers.h - include it first.  WDM-KS in particular needs ks.h before
+// ksmedia.h (#error otherwise), and ksmedia.h needs mmreg.h to be visible
+// first so its KSDATAFORMAT_SUBTYPE_* definitions see WAVEFORMATEXTENSIBLE.
+#include "win_headers.h"
 
 #include <atomic>
 #include <thread>

@@ -3,11 +3,12 @@
 // MME is the oldest Windows audio API but still works on every Windows version.
 // Latency is high (typically 30-100ms) because winmm buffers are large, but
 // it's a reliable fallback when WASAPI/ASIO are unavailable.
+//
+// mme_engine.h pulls in win_headers.h, which already includes windows.h,
+// mmsystem.h, ks.h, ksmedia.h and the SPEAKER_* fallback macros in the
+// correct order - no extra SDK includes needed here.
 
 #include "mme_engine.h"
-
-#include <ks.h>
-#include <ksmedia.h>
 
 #include <algorithm>
 #include <cstring>

@@ -24,6 +24,13 @@
 // This avoids blocking the high-priority audio thread on JS execution, which
 // is the only practical way to keep GC pauses from causing dropouts.
 
+// win_headers.h MUST be included before <napi.h>: node-addon-api's headers
+// transitively include windows.h, and we need to control that inclusion
+// (NOMINMAX set, WIN32_LEAN_AND_MEAN NOT set, mmreg.h / ks.h / ksmedia.h /
+// mmsystem.h pulled in the correct order).  Including win_headers.h first
+// makes napi.h's later windows.h include a no-op via header guards.
+#include "win_headers.h"
+
 #include <napi.h>
 
 #include <atomic>

@@ -1,12 +1,11 @@
 // util.cc - Implementation of common helpers.
-#include "util.h"
+//
+// win_headers.h must be included before util.h (and any other project header)
+// so the Windows SDK audio headers are pulled in the correct order: ks.h
+// before ksmedia.h, mmreg.h before both, windows.h before mmsystem.h, etc.
+#include "win_headers.h"
 
-#include <avrt.h>
-#include <mmreg.h>
-#include <audioclient.h>   // AUDCLNT_E_* HRESULTs in HresultToStatus
-// ksmedia.h hard-requires ks.h to be included first (#error otherwise).
-#include <ks.h>
-#include <ksmedia.h>
+#include "util.h"
 
 #include <cmath>
 #include <cstdio>

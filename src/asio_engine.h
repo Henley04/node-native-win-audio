@@ -18,8 +18,11 @@
 #ifndef NODE_WIN_AUDIO_ASIO_ENGINE_H_
 #define NODE_WIN_AUDIO_ASIO_ENGINE_H_
 
-#include <windows.h>
-#include <objbase.h>
+// All Windows SDK header ordering / fallback macro handling lives in
+// win_headers.h - include it first.  ASIO uses CoCreateInstance which needs
+// objbase.h's GUID machinery, and our asio_types.h reuses WAVEFORMATEX-ish
+// types from mmreg.h.
+#include "win_headers.h"
 
 #include <atomic>
 #include <thread>

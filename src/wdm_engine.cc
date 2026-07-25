@@ -12,11 +12,14 @@
 // may miss pins that require explicit KSPROPERTY_PIN_PHYSICALCONNECTIONS
 // chains.
 
+// initguid.h MUST be included before any header that uses DEFINE_GUID
+// (ks.h, ksmedia.h) - it redefines DEFINE_GUID to emit an actual definition
+// rather than an extern declaration.  win_headers.h (pulled in by
+// wdm_engine.h) includes ks.h / ksmedia.h, so initguid.h has to come first.
+#include <initguid.h>
+
 #include "wdm_engine.h"
 
-#include <initguid.h>
-#include <ks.h>
-#include <ksmedia.h>
 #include <setupapi.h>
 
 #include <algorithm>
