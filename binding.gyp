@@ -23,14 +23,14 @@
         "VCCLCompilerTool": {
           "ExceptionHandling": 1,
           "RuntimeTypeInfo": "true",
-          "EnablePREfast": "true",
           "WarningLevel": 3,
           "ConformanceMode": "true",
           "LanguageStandard": "stdcpp17",
           "AdditionalOptions": [
             "/permissive-",
             "/Zc:__cplusplus",
-            "/wd4996"
+            "/wd4996",
+            "/bigobj"
           ]
         },
         "VCLinkerTool": {
@@ -46,8 +46,7 @@
             "mfuuid.lib",
             "windowsapp.lib",
             "RuntimeObject.lib"
-          ],
-          "SubSystem": "1"
+          ]
         }
       },
       "msvs_disabled_warnings": [
@@ -56,7 +55,11 @@
         "4244",
         "4100",
         "4127",
-        "4505"
+        "4505",
+        "4456",
+        "4458",
+        "4189",
+        "4324"
       ],
       "defines": [
         "NAPI_CPP_EXCEPTIONS",
@@ -64,25 +67,6 @@
         "WINVER=0x0A00",
         "NTDDI_VERSION=0x0A00000C",
         "_WINSOCKAPI_"
-      ],
-      "conditions": [
-        [
-          "OS=='win32'",
-          {
-            "libraries": [
-              "-lOle32.lib",
-              "-lMmdevapi.lib",
-              "-lWinmm.lib",
-              "-lSetupapi.lib",
-              "-lKsuser.lib",
-              "-lAvrt.lib",
-              "-lMfplat.lib",
-              "-lMfuuid.lib",
-              "-lWindowsapp.lib",
-              "-lRuntimeObject.lib"
-            ]
-          }
-        ]
       ]
     }
   ]

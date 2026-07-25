@@ -9,6 +9,7 @@
 #ifndef NODE_WIN_AUDIO_ASIO_TYPES_H_
 #define NODE_WIN_AUDIO_ASIO_TYPES_H_
 
+#include <unknwn.h>
 #include <cstdint>
 
 namespace nwa {
@@ -115,9 +116,12 @@ constexpr ASIOMessageId kAsioSupportsOutputGain   = 13;
 constexpr ASIOMessageId kAsioSupportsOutputMeter  = 14;
 constexpr ASIOMessageId kAsioOverload             = 15;
 
-// The IASIO interface - a C++ abstract class with virtual functions.  The vtable
-// layout is fixed by the ASIO ABI and matches every shipping driver.
-class IASIO {
+// The IASIO interface - a C++ abstract class derived from IUnknown so the
+// vtable's first three slots are QueryInterface/AddRef/Release as required by
+// the COM ABI.  Without IUnknown derivation, the ASIO driver's first virtual
+// call would land on the wrong function (Init would be invoked as if it were
+// QueryInterface).  The remaining method order matches the public ASIO ABI.
+class IASIO : public IUnknown {
  public:
   virtual ASIOBool   Init(void* sysRef) = 0;
   virtual void       GetDriverName(char* name) = 0;

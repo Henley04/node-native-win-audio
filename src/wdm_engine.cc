@@ -175,16 +175,37 @@ Status WdmEngine::IsFormatSupported(const StreamConfig& cfg,
   return Status::Ok;
 }
 
-bool WdmEngine::KsProperty(DWORD set, ULONG id, ULONG flags, void* value,
-                           ULONG valueSize, ULONG* bytesReturned) {
+bool WdmEngine::KsProperty(const GUID& set, ULONG id, ULONG flags,
+                           void* value, ULONG valueSize,
+                           ULONG* bytesReturned) {
   KSPROPERTY prop{};
-  prop.Set   = *reinterpret_cast<const GUID*>(&set);
+  prop.Set   = set;
   prop.Id    = id;
   prop.Flags = flags;
 
   DWORD br = 0;
   BOOL ok = DeviceIoControl(pin_ != INVALID_HANDLE_VALUE ? pin_ : filter_,
                             IOCTL_KS_PROPERTY, &prop, sizeof(prop),
+                            value, valueSize, &br, nullptr);
+  if (bytesReturned) *bytesReturned = br;
+  return ok && br > 0;
+}
+
+// Query a pin-factory scoped property (uses KSP_PIN with PinId filled in).
+bool WdmEngine_KsPinProperty(HANDLE filter, const GUID& set, ULONG id,
+                             ULONG flags, ULONG pinId,
+                             void* value, ULONG valueSize,
+                             ULONG* bytesReturned) {
+  KSP_PIN prop{};
+  prop.Property.Set    = set;
+  prop.Property.Id     = id;
+  prop.Property.Flags  = flags;
+  prop.PinId           = pinId;
+  prop.Reserved        = 0;
+
+  DWORD br = 0;
+  BOOL ok = DeviceIoControl(filter, IOCTL_KS_PROPERTY,
+                            &prop, sizeof(prop),
                             value, valueSize, &br, nullptr);
   if (bytesReturned) *bytesReturned = br;
   return ok && br > 0;
@@ -199,57 +220,52 @@ Status WdmEngine::CreatePin(bool render, SampleFormat fmt, uint32_t rate,
 
   // Try pin factories 0..15 until one accepts our format.
   for (ULONG pinId = 0; pinId < 16; ++pinId) {
-    // Query pin communication to make sure it's a sink/source we can use.
-    KSPIN_COMMUNICATION comm = KSPIN_COMMUNICATION_NONE;
-    if (!KsProperty(*reinterpret_cast<const DWORD*>(&KSPROPSETID_Pin),
-                    KSPROPERTY_PIN_COMMUNICATION, KSPROPERTY_TYPE_GET,
-                    &comm, sizeof(comm), nullptr)) {
-      continue;
-    }
-    (void)comm;  // not strictly required for open
-
-    KSPIN_DATAFLOW flow;
-    if (!KsProperty(*reinterpret_cast<const DWORD*>(&KSPROPSETID_Pin),
-                    KSPROPERTY_PIN_DATAFLOW, KSPROPERTY_TYPE_GET,
-                    &flow, sizeof(flow), nullptr)) {
+    KSPIN_DATAFLOW flow = KSPIN_DATAFLOW_IN;
+    if (!WdmEngine_KsPinProperty(filter_, KSPROPSETID_Pin,
+                                 KSPROPERTY_PIN_DATAFLOW,
+                                 KSPROPERTY_TYPE_GET, pinId,
+                                 &flow, sizeof(flow), nullptr)) {
       continue;
     }
     bool flowOk = render ? (flow == KSPIN_DATAFLOW_IN)
                          : (flow == KSPIN_DATAFLOW_OUT);
     if (!flowOk) continue;
 
-    // Try to set the proposed data format on this pin.
-    KSP_PIN propose{};
-    propose.Property.Set    = KSPROPSETID_Pin;
-    propose.Property.Id     = KSPROPERTY_PIN_PROPOSEDATAFORMAT;
-    propose.Property.Flags  = KSPROPERTY_TYPE_SET;
-    propose.PinId           = pinId;
-    propose.Reserved        = 0;
-
+    // Try to set the proposed data format on this pin factory.
     DWORD br = 0;
-    BOOL ok = DeviceIoControl(filter_, IOCTL_KS_PROPERTY,
-                              &propose, sizeof(propose),
-                              &desired, sizeof(desired), &br, nullptr);
+    BOOL ok = WdmEngine_KsPinProperty(filter_, KSPROPSETID_Pin,
+                                      KSPROPERTY_PIN_PROPOSEDATAFORMAT,
+                                      KSPROPERTY_TYPE_SET, pinId,
+                                      &desired, sizeof(desired), &br);
     if (!ok) continue;
 
-    // Open the pin instance.
-    KSPIN_CONNECT connect{};
-    connect.PinId                  = pinId;
-    connect.PinToHandle            = nullptr;
-    connect.Method                 = KSINTERFACE_STANDARD_STREAMING;
-    connect.MajorTarget.DataFormat = desired.DataFormat;
+    // Build the connection descriptor.  KsCreatePin expects a KSPIN_CONNECT
+    // immediately followed by a KSDATAFORMAT describing the desired format.
+    struct PinConnectBundle {
+      KSPIN_CONNECT          connect;
+      KSDATAFORMAT_WAVEFORMATEX format;
+    };
+    PinConnectBundle bundle{};
+    bundle.connect.Interface.Set        = KSINTERFACESETID_Standard;
+    bundle.connect.Interface.Id         = KSINTERFACE_STANDARD_STREAMING;
+    bundle.connect.Interface.Flags      = 0;
+    bundle.connect.Medium.Set           = KSMEDIUMSETID_Standard;
+    bundle.connect.Medium.Id            = 0;
+    bundle.connect.Medium.Flags         = 0;
+    bundle.connect.PinId                = pinId;
+    bundle.connect.PinToHandle          = nullptr;
+    bundle.connect.Priority.PriorityClass    = KSPRIORITY_NORMAL;
+    bundle.connect.Priority.PrioritySubClass = 1;
+    bundle.format                       = desired;
 
     HANDLE pin = INVALID_HANDLE_VALUE;
-    DWORD access = GENERIC_READ | GENERIC_WRITE;
-    if (render) access = GENERIC_WRITE;
-    else        access = GENERIC_READ;
+    DWORD access = render ? GENERIC_WRITE : GENERIC_READ;
 
-    // Use KsCreatePin (exported by ksuser.lib).
-    HRESULT hr = KsCreatePin(filter_, &connect, access, &pin);
-    if (FAILED(hr) || pin == INVALID_HANDLE_VALUE) continue;
-
-    pin_ = pin;
-    return Status::Ok;
+    HRESULT hr = KsCreatePin(filter_, &bundle.connect, access, &pin);
+    if (SUCCEEDED(hr) && pin != INVALID_HANDLE_VALUE) {
+      pin_ = pin;
+      return Status::Ok;
+    }
   }
   return Status::FormatNotSupported;
 }
@@ -283,7 +299,7 @@ Status WdmEngine::Open(const StreamConfig& cfg, DataCallback dataCb,
 
   // Set pin state to ACQUIRE first (KSSTATE_RUN is set in Start()).
   KSSTATE state = KSSTATE_ACQUIRE;
-  if (!KsProperty(*reinterpret_cast<const DWORD*>(&KSPROPSETID_Connection),
+  if (!KsProperty(KSPROPSETID_Connection,
                   KSPROPERTY_CONNECTION_STATE, KSPROPERTY_TYPE_SET,
                   &state, sizeof(state), nullptr)) {
     Close(); return Status::BackendError;
@@ -312,7 +328,7 @@ Status WdmEngine::Start() {
   if (running_) return Status::AlreadyRunning;
 
   KSSTATE run = KSSTATE_RUN;
-  if (!KsProperty(*reinterpret_cast<const DWORD*>(&KSPROPSETID_Connection),
+  if (!KsProperty(KSPROPSETID_Connection,
                   KSPROPERTY_CONNECTION_STATE, KSPROPERTY_TYPE_SET,
                   &run, sizeof(run), nullptr)) {
     return Status::BackendError;
@@ -333,7 +349,7 @@ Status WdmEngine::Stop() {
   SetEvent(stopEvent_);
   if (thread_.joinable()) thread_.join();
   KSSTATE stop = KSSTATE_PAUSE;
-  KsProperty(*reinterpret_cast<const DWORD*>(&KSPROPSETID_Connection),
+  KsProperty(KSPROPSETID_Connection,
              KSPROPERTY_CONNECTION_STATE, KSPROPERTY_TYPE_SET,
              &stop, sizeof(stop), nullptr);
   return Status::Ok;
@@ -347,7 +363,7 @@ Status WdmEngine::Close() {
   allocBuf_.clear();
   if (pin_ != INVALID_HANDLE_VALUE) {
     KSSTATE stop = KSSTATE_STOP;
-    KsProperty(*reinterpret_cast<const DWORD*>(&KSPROPSETID_Connection),
+    KsProperty(KSPROPSETID_Connection,
                KSPROPERTY_CONNECTION_STATE, KSPROPERTY_TYPE_SET,
                &stop, sizeof(stop), nullptr);
     CloseHandle(pin_); pin_ = INVALID_HANDLE_VALUE;

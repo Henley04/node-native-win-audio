@@ -1,0 +1,99 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build & test (Windows)
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [16, 18, 20, 22]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          check-latest: true
+
+      - name: Configure MSVC dev shell
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install node-gyp
+        run: npm install -g node-gyp@latest
+
+      - name: Show tool versions
+        shell: pwsh
+        run: |
+          node --version
+          npm --version
+          node-gyp --version
+          python --version
+
+      - name: Install dependencies
+        shell: pwsh
+        run: npm install --ignore-scripts
+
+      - name: Build native addon (node-gyp)
+        shell: pwsh
+        run: npx node-gyp rebuild --verbose
+
+      - name: Verify .node artifact exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'build\Release\win_audio.node')) {
+            throw "build\Release\win_audio.node not found"
+          }
+          Write-Host "Native binary present:"
+          Get-Item build\Release\win_audio.node | Format-List
+
+      - name: Load addon smoke test
+        shell: pwsh
+        run: |
+          node -e "const m = require('./build/Release/win_audio.node'); console.log('exports:', Object.keys(m));"
+
+      - name: Run JS test suite
+        shell: pwsh
+        run: npm test
+
+      - name: Run list-devices example (best-effort, no audio HW in CI)
+        shell: pwsh
+        run: |
+          try {
+            node examples/list-devices.js
+          } catch {
+            Write-Host "list-devices threw (expected on headless CI runner): $_"
+          }
+        continue-on-error: true
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: win_audio-node${{ matrix.node-version }}
+          path: |
+            build/Release/win_audio.node
+            build/Release/*.pdb
+          if-no-files-found: warn
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-node${{ matrix.node-version }}
+          path: |
+            build/
+            C:\Users\runneradmin\AppData\Local\node-gyp\Cache/
+          if-no-files-found: warn

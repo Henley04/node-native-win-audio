@@ -56,7 +56,7 @@ class WdmEngine : public AudioEngine {
                    uint16_t channels, uint32_t bufferFrames);
 
   // Helper: send a KS property.
-  bool KsProperty(DWORD set, ULONG id, ULONG flags, void* value,
+  bool KsProperty(const GUID& set, ULONG id, ULONG flags, void* value,
                   ULONG valueSize, ULONG* bytesReturned);
 
   HANDLE filter_  = INVALID_HANDLE_VALUE;  // filter handle

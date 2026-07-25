@@ -79,19 +79,6 @@ SampleFormat AsioTypeToSampleFormat(ASIOSampleType t) {
   }
 }
 
-// Read ASIO sample type info for each channel we're going to use.  Because
-// ASIO gives us raw buffers in device format, we must track per-channel type.
-struct ChannelType {
-  ASIOSampleType type;
-};
-
-// Convert one ASIO channel buffer (planar) into a section of an interleaved
-// float buffer.  `dst` points to the start of the float buffer; the channel
-// `ch` writes to dst[frame * channels + ch] for each frame.
-template <ASIOSampleType T>
-void ConvertChannel(const void* src, uint32_t frames, uint16_t channels,
-                    uint16_t ch, float* dst);
-
 // Generic runtime conversion - slower but covers all types.
 void ConvertChannelRuntime(const void* src, ASIOSampleType type,
                            uint32_t frames, uint16_t channels,

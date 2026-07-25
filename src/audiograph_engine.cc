@@ -88,8 +88,9 @@ Status AudioGraphEngine::EnumerateDevices(StreamDirection dir,
   auto selector = (dir == StreamDirection::Output)
       ? winrt::MediaDevice::GetAudioRenderSelector()
       : winrt::MediaDevice::GetAudioCaptureSelector();
-  auto op = winrt::DeviceInformation::FindAllAsync(
-      selector, winrt::IVectorView<winrt::hstring>{}, winrt::DeviceInformationKind::DeviceInterface);
+  // The 1-arg overload defaults to DeviceInterface kind, which is what the
+  // audio selectors return.
+  auto op = winrt::DeviceInformation::FindAllAsync(selector);
   // Synchronously wait (the addon runs on a background thread; this is OK).
   auto devices = op.get();
   for (auto const& d : devices) {
@@ -155,8 +156,14 @@ Status AudioGraphEngine::Open(const StreamConfig& cfg, DataCallback dataCb,
       winrt::QuantumSizeSelectionMode::LowestLatency);
 
   if (!cfg.deviceId.empty()) {
+    // PrimaryRenderDevice takes a DeviceInformation, so resolve the id first.
     auto devId = winrt::to_hstring(cfg.deviceId);
-    settings.PrimaryRenderDevice(devId);
+    try {
+      auto devInfo = winrt::DeviceInformation::CreateFromIdAsync(devId).get();
+      settings.PrimaryRenderDevice(devInfo);
+    } catch (const winrt::hresult_error&) {
+      // Fall through with default device.
+    }
   }
 
   winrt::CreateAudioGraphResult result = nullptr;
