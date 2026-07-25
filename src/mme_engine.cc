@@ -6,6 +6,9 @@
 
 #include "mme_engine.h"
 
+#include <ks.h>
+#include <ksmedia.h>
+
 #include <algorithm>
 #include <cstring>
 

@@ -3,6 +3,8 @@
 
 #include <avrt.h>
 #include <mmreg.h>
+// ksmedia.h hard-requires ks.h to be included first (#error otherwise).
+#include <ks.h>
 #include <ksmedia.h>
 
 #include <cmath>
